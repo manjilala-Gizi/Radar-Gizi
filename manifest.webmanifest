@@ -1,0 +1,29 @@
+{
+  "name": "RADAR Gizi",
+  "short_name": "RADAR Gizi",
+  "description": "Rekap Analisis Determinan dan Area Rawan Gizi: pendamping e-PPGBM untuk menentukan desa prioritas intervensi gizi.",
+  "lang": "id",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F6F5",
+  "theme_color": "#0E7C66",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
