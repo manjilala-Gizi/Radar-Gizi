@@ -117,6 +117,9 @@ svg{display:block;width:100%;height:auto}
 .poly:hover{fill-opacity:1}
 .poly.fsk{fill:var(--sunk);stroke:var(--muted);stroke-width:.6;stroke-dasharray:2 2;cursor:default}
 .poly.f0{stroke:var(--line)}
+.poly.ctx{fill:var(--sunk);stroke:var(--line);stroke-width:.8;fill-opacity:.9;cursor:default}
+.poly.ctx:hover{fill-opacity:.9}
+.mlab.pkm{font-size:12px;font-weight:800}
 .poly.sel{stroke:var(--ink);stroke-width:3}
 .mlab{fill:var(--ink);font:600 10.5px var(--f-body);pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px}
@@ -226,6 +229,9 @@ footer{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padd
           </label>
           <div class="plist" id="plist"></div>
         </div>
+        <label class="f" id="unitBox" for="selUnit" hidden>Unit analisis
+          <select id="selUnit"><option value="pkm">Per puskesmas</option><option value="desa">Per desa</option></select>
+        </label>
         <div class="store">
           <button class="btn sm" id="bBackup" type="button">Simpan cadangan</button>
           <label class="btn sm" for="fBackup" style="text-align:center">Buka cadangan<input type="file" id="fBackup" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0"></label>
@@ -343,7 +349,7 @@ footer{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padd
 
       <section class="card">
         <div class="hd">
-          <div><h3>Urutan prioritas desa</h3><p class="sub">Diurutkan menurut kuadran, lalu jarak dari kedua garis potong.</p></div>
+          <div><h3 id="tableTitle">Urutan prioritas desa</h3><p class="sub">Diurutkan menurut kuadran, lalu jarak dari kedua garis potong.</p></div>
           <button class="btn" id="bCopy" type="button">Salin tabel ke Excel</button>
         </div>
         <div class="tbl" id="table"></div>
@@ -360,7 +366,7 @@ footer{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padd
       </div>
     </main>
   </div>
-  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Manjilala, Poltekkes Kemenkes Makassar · versi 1.4.0 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
+  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Manjilala, Poltekkes Kemenkes Makassar · versi 1.5.0 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
 </div>
 
 <script>
@@ -400,7 +406,7 @@ const Q = {
 };
 const ROMAN = {1:"I",2:"II",3:"III",4:"IV"};
 
-const S = {periods:[], pk:null, trendK:null, rows:[], ident:{}, kab:"", kec:"data", geoCustom:null, fileName:"", xk:"P1", yk:"D4", cutX:null, cutY:null, sel:null, hideQ:new Set()};
+const S = {unit:"desa", periods:[], pk:null, trendK:null, rows:[], ident:{}, kab:"", kec:"data", geoCustom:null, fileName:"", xk:"P1", yk:"D4", cutX:null, cutY:null, sel:null, hideQ:new Set()};
 
 const $ = id => document.getElementById(id);
 const fmt = (v,d=1) => v==null||isNaN(v) ? "–" : v.toLocaleString("id-ID",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -410,6 +416,22 @@ const norm = s => String(s??"").toLowerCase().replace(/^(desa|kelurahan|kel\.|ds
 const num = v => { if(v==null||v==="") return null; const n = typeof v==="number"? v : parseFloat(String(v).replace(/\./g,"").replace(",",".")); return isFinite(n)? n : null; };
 const parseCut = s => { const n=parseFloat(String(s).replace(",",".")); return isFinite(n)? n : null; };
 
+const STR_FIELDS=new Set(["kode_desa","nama_desa","puskesmas"]);
+function pkmName(r){ return String(r.puskesmas??"").trim(); }
+function hasPkmRows(rows){ const s=new Set(rows.map(pkmName).filter(Boolean)); return s.size>=2; }
+function isPkm(){ return S.unit==="pkm" && hasPkmRows(S.rows); }
+function U(){ return isPkm()? "puskesmas" : "desa"; }
+function unitRows(rows){
+  if(!(S.unit==="pkm" && hasPkmRows(rows))) return rows;
+  const g=new Map();
+  rows.forEach(r=>{
+    const p=pkmName(r)||"(tanpa puskesmas)";
+    if(!g.has(p)) g.set(p,{kode_desa:"PKM:"+p, nama_desa:p, puskesmas:p, _n:0});
+    const a=g.get(p); a._n++;
+    for(const k in r){ if(STR_FIELDS.has(k)) continue; const v=r[k]; if(typeof v==="number"&&isFinite(v)) a[k]=(a[k]??0)+v; }
+  });
+  return [...g.values()];
+}
 function calc(row, ind){
   let n=0; for(const k of ind.num){ const v=row[k]; if(v==null) return null; n+=v; }
   const d=row[ind.den]; if(d==null||d<=0) return null;
@@ -421,7 +443,7 @@ function wilayah(ind, rows=S.rows){
   return c? {v:n/d*100,n,d} : null;
 }
 function stats(ind){
-  const vs=S.rows.map(r=>calc(r,ind)).filter(x=>x&&x.v!=null).map(x=>x.v).sort((a,b)=>a-b);
+  const vs=unitRows(S.rows).map(r=>calc(r,ind)).filter(x=>x&&x.v!=null).map(x=>x.v).sort((a,b)=>a-b);
   if(!vs.length) return null;
   const mean=vs.reduce((a,b)=>a+b,0)/vs.length;
   const m=vs.length%2? vs[(vs.length-1)/2] : (vs[vs.length/2-1]+vs[vs.length/2])/2;
@@ -431,7 +453,7 @@ function hasData(ind){ return S.rows.some(r=>{const x=calc(r,ind);return x&&x.v!
 
 function analyse(rows=S.rows){
   const ix=BYK[S.xk], iy=BYK[S.yk];
-  return rows.map(r=>{
+  return unitRows(rows).map(r=>{
     const x=calc(r,ix), y=calc(r,iy);
     const o={r, x, y, q:0, score:-Infinity, flags:[]};
     if(x&&x.invalid) o.flags.push("X tidak valid");
@@ -484,7 +506,10 @@ function render(){
   $("welcome").hidden=has; $("results").hidden=!has;
   $("dataInfo").textContent = has? `${S.rows.length} desa · ${periodLabel(curPeriod())}${S.fileName?" · "+S.fileName:""}` : "Belum ada data. Unduh template, isi, lalu unggah.";
   renderPeriodBox();
+  $("unitBox").hidden=!(has&&hasPkmRows(S.rows)); $("selUnit").value=S.unit;
+  if(has&&hasPkmRows(S.rows)) $("dataInfo").textContent+=` · ${new Set(S.rows.map(pkmName).filter(Boolean)).size} puskesmas`;
   if(!has){ $("msg").hidden=true; return; }
+  $("tableTitle").textContent=`Urutan prioritas ${U()}`;
 
   // quadrant cards
   const cnt={1:0,2:0,3:0,4:0}; A.forEach(a=>{ if(a.q) cnt[a.q]++; });
@@ -522,7 +547,7 @@ function tickStep(max){ const raw=max/5; const p=Math.pow(10,Math.floor(Math.log
 function renderChart(A,ix,iy){
   const pts=A.filter(a=>a.q && !S.hideQ.has(a.q));
   $("chartTitle").textContent = `${ix.n} × ${iy.n}`;
-  $("chartSub").textContent = `${pts.length} desa ditampilkan · garis putus-putus = garis potong yang Anda ketik`;
+  $("chartSub").textContent = `${pts.length} ${U()} ditampilkan · garis putus-putus = garis potong yang Anda ketik`;
   if(!A.some(a=>a.q)){ $("chart").innerHTML=`<div class="empty">Belum ada desa yang punya data lengkap untuk kedua indikator ini.</div>`; return; }
   const W=640,H=440,ml=58,mr=18,mt=18,mb=50, pw=W-ml-mr, ph=H-mt-mb;
   const xsAll=A.filter(a=>a.q).map(a=>a.x.v);
@@ -601,7 +626,7 @@ function syncMapControls(){
   $("selKab").innerHTML=`<option value="">Tanpa peta (tampilan petak)</option>`+(S.geoCustom?`<option value="__custom" selected>File peta sendiri</option>`:"")+
     kabs.map(k=>`<option value="${k}" ${!S.geoCustom&&k===S.kab?"selected":""}>${esc(GEOIDX[k].n)}</option>`).join("");
   const kecs=S.kab&&GEOIDX[S.kab]? Object.entries(GEOIDX[S.kab].kec).sort((a,b)=>a[1].localeCompare(b[1])) : [];
-  $("selKec").innerHTML=`<option value="data" ${S.kec==="data"?"selected":""}>Kecamatan yang ada di data</option><option value="all" ${S.kec==="all"?"selected":""}>Seluruh kabupaten/kota</option>`+
+  $("selKec").innerHTML=`<option value="data" ${S.kec==="data"?"selected":""}>Fokus ke desa dalam data (disarankan)</option><option value="all" ${S.kec==="all"?"selected":""}>Seluruh kabupaten/kota</option>`+
     kecs.map(([k,n])=>`<option value="${k}" ${S.kec===k?"selected":""}>Kec. ${esc(n)}</option>`).join("");
   $("selKec").disabled=!S.kab||!!S.geoCustom;
 }
@@ -611,44 +636,67 @@ function autoKab(){
   return best? best[0] : "";
 }
 function renderMap(A){
-  const byKode={}, byName={};
-  A.forEach(a=>{ const d=digits(a.r.kode_desa); if(d.length>=6) byKode[d]=a; byName[norm(a.r.nama_desa)]=a; });
-  $("legend").innerHTML=[1,2,3,4].map(q=>`<span><i style="--c:${Q[q].c}"></i>${ROMAN[q]} ${Q[q].t}</span>`).join("")+`<span><i style="--c:var(--na)"></i>Tidak ada data</span>`;
+  const pkm=isPkm();
+  const objOfRow=new Map();
+  if(pkm){ const byP={}; A.forEach(a=>byP[a.r.puskesmas]=a); S.rows.forEach(r=>{ const o=byP[pkmName(r)||"(tanpa puskesmas)"]; if(o) objOfRow.set(r,o); }); }
+  else A.forEach(a=>objOfRow.set(a.r,a));
+  const rowByKode={}, rowByName={};
+  S.rows.forEach(r=>{ const d=digits(r.kode_desa); if(d.length>=6) rowByKode[d]=r; rowByName[norm(r.nama_desa)]=r; });
+  $("legend").innerHTML=[1,2,3,4].map(q=>`<span><i style="--c:${Q[q].c}"></i>${ROMAN[q]} ${Q[q].t}</span>`).join("")+`<span><i style="--c:var(--na)"></i>Data belum lengkap</span><span><i style="--c:var(--sunk);border:1px solid var(--line)"></i>Di luar data</span>`;
   const G=currentGeo();
   if(!G){
-    $("mapSub").textContent="Pilih kabupaten/kota di menu Peta. Sementara desa ditampilkan sebagai petak, urut prioritas.";
+    $("mapSub").textContent="Pilih kabupaten/kota di menu Peta. Sementara ditampilkan sebagai petak, urut prioritas.";
     $("mapActs").hidden=true;
     $("map").innerHTML=`<div class="tiles">${A.map(a=>`<button type="button" class="tile ${S.sel===a.r.kode_desa?"sel":""}" style="--c:${a.q?Q[a.q].c:"var(--na)"}" data-id="${esc(a.r.kode_desa)}">${esc(short(a.r.nama_desa))}<small>${a.q?"Kuadran "+ROMAN[a.q]:"data kosong"}</small></button>`).join("")}</div>`;
     return;
   }
   $("mapActs").hidden=false;
   const feats=G.fc.features||[];
-  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
-  feats.forEach(f=>geoRings(f.geometry).forEach(poly=>poly.forEach(ring=>ring.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}))));
-  if(!isFinite(x0)){ $("map").innerHTML=`<div class="empty">Tidak ada poligon desa untuk cakupan ini.</div>`; $("mapSub").textContent=G.label; return; }
-  const k=Math.cos((y0+y1)/2*Math.PI/180);
-  const W=560, pad=10, gw=(x1-x0)*k, gh=(y1-y0), sc=Math.min((W-2*pad)/gw, 520/gh), H=gh*sc+2*pad, ox=(W-gw*sc)/2;
-  const px=x=>ox+(x-x0)*k*sc, py=y=>pad+(y1-y)*sc;
-  let g="", labs=[], matchedSet=new Set(), nDesa=0;
-  feats.forEach(f=>{
+  // tahap 1: cocokkan
+  const items=feats.map(f=>{
     const p=f.properties||{}, sk=!G.custom&&p.st!=="desa";
-    if(!sk) nDesa++;
-    const a=sk? null : matchFeature(f,byKode,byName,G.custom); if(a) matchedSet.add(a.r.kode_desa);
-    const q=a&&a.q&&!S.hideQ.has(a.q)? a.q : 0;
+    let row=null;
+    if(!sk){
+      if(!G.custom){ row=rowByKode[digits(p.kode)]||rowByName[norm(p.nama)]||null; }
+      else{ for(const v of Object.values(p)){ if(v==null) continue; const d=digits(v); if(d.length>=6&&rowByKode[d]){ row=rowByKode[d]; break; } }
+            if(!row) for(const v of Object.values(p)){ if(typeof v==="string"&&rowByName[norm(v)]){ row=rowByName[norm(v)]; break; } } }
+    }
+    return {f,p,sk,row,o:row?objOfRow.get(row):null};
+  });
+  const matched=items.filter(it=>it.row);
+  const fitSet = (!G.custom && S.kec==="data" && matched.length)? matched : items;
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  fitSet.forEach(it=>geoRings(it.f.geometry).forEach(poly=>poly.forEach(ring=>ring.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}))));
+  if(!isFinite(x0)){ $("map").innerHTML=`<div class="empty">Tidak ada poligon desa untuk cakupan ini.</div>`; $("mapSub").textContent=G.label; return; }
+  const mx=(x1-x0)*0.04, my=(y1-y0)*0.04; x0-=mx; x1+=mx; y0-=my; y1+=my;
+  const k=Math.cos((y0+y1)/2*Math.PI/180);
+  const W=560, pad=6, gw=(x1-x0)*k, gh=(y1-y0), sc=Math.min((W-2*pad)/gw, 520/gh), H=gh*sc+2*pad, ox=(W-gw*sc)/2;
+  const px=x=>ox+(x-x0)*k*sc, py=y=>pad+(y1-y)*sc;
+  let g="", labs=[]; const pk={};
+  items.forEach(it=>{
+    const {f,p,sk,row,o}=it;
     let d="", lx=0, ly=0, ln=0, best=0;
     geoRings(f.geometry).forEach(poly=>{
       poly.forEach(ring=>{ d+="M"+ring.map(([x,y])=>px(x).toFixed(1)+","+py(y).toFixed(1)).join("L")+"Z"; });
       const outer=poly[0]||[]; if(outer.length>best){ best=outer.length; lx=0;ly=0;ln=0; outer.slice(0,-1).forEach(([x,y])=>{lx+=px(x);ly+=py(y);ln++;}); }
     });
-    const nm = a? a.r.nama_desa : (p.nama||p.nama_desa||p.NAMOBJ||p.name||p.desa||"");
-    if(sk){ g+=`<path class="poly fsk" d="${d}" fill-rule="evenodd"><title>Wilayah saling klaim: ${esc(nm)}</title></path>`; return; }
-    const id = a? esc(a.r.kode_desa) : "";
-    g+=`<path class="poly f${q} ${a&&S.sel===a.r.kode_desa?"sel":""}" d="${d}" fill-rule="evenodd" ${id?`data-id="${id}" tabindex="0"`:""}><title>${esc(nm)}${a&&a.q?" · Kuadran "+ROMAN[a.q]:a?" · data belum lengkap":" · tidak ada di data"}</title></path>`;
-    if(ln && a) labs.push(`<text class="mlab" x="${(lx/ln).toFixed(1)}" y="${(ly/ln+4).toFixed(1)}">${esc(short(nm))}</text>`);
+    const nmDesa = row? row.nama_desa : (p.nama||p.nama_desa||p.NAMOBJ||p.name||p.desa||"");
+    if(sk || !row){ g+=`<path class="poly ctx" d="${d}" fill-rule="evenodd"><title>${esc(nmDesa)} · di luar data</title></path>`; return; }
+    const q=o&&o.q&&!S.hideQ.has(o.q)? o.q : 0;
+    const id=o? esc(o.r.kode_desa) : "";
+    const tip = pkm? `${esc(nmDesa)} · Puskesmas ${esc(o?o.r.nama_desa:"-")}${o&&o.q?" · Kuadran "+ROMAN[o.q]:""}` : `${esc(nmDesa)}${o&&o.q?" · Kuadran "+ROMAN[o.q]:" · data belum lengkap"}`;
+    g+=`<path class="poly f${q} ${o&&S.sel===o.r.kode_desa?"sel":""}" d="${d}" fill-rule="evenodd" ${id?`data-id="${id}" tabindex="0"`:""} ${pkm?'style="stroke-width:.7"':""}><title>${tip}</title></path>`;
+    if(ln){
+      if(pkm&&o){ const P=pk[o.r.kode_desa]=pk[o.r.kode_desa]||{x:0,y:0,n:0,t:o.r.nama_desa}; P.x+=lx/ln; P.y+=ly/ln; P.n++; }
+      else labs.push(`<text class="mlab" x="${(lx/ln).toFixed(1)}" y="${(ly/ln+4).toFixed(1)}">${esc(short(nmDesa))}</text>`);
+    }
   });
-  const miss=S.rows.filter(r=>!matchedSet.has(r.kode_desa));
-  $("mapSub").innerHTML = `${esc(G.label)} · ${matchedSet.size} dari ${S.rows.length} desa di data tampil di peta`+(miss.length?` · <span style="color:var(--q2)">belum ketemu: ${miss.slice(0,6).map(r=>esc(short(r.nama_desa))).join(", ")}${miss.length>6?", …":""} (cek kode desa)</span>`:"");
-  $("map").innerHTML=`<svg viewBox="0 0 ${W} ${H.toFixed(0)}" role="img" aria-label="Peta kuadran desa">${g}${labs.length<=40?labs.join(""):""}</svg>`;
+  if(pkm) labs=Object.values(pk).map(P=>`<text class="mlab pkm" x="${(P.x/P.n).toFixed(1)}" y="${(P.y/P.n+4).toFixed(1)}">${esc(P.t)}</text>`);
+  const matchedRows=new Set(matched.map(it=>it.row));
+  const miss=S.rows.filter(r=>!matchedRows.has(r));
+  const scopeLbl = (!G.custom && S.kec==="data")? (pkm? `${new Set(S.rows.map(pkmName).filter(Boolean)).size} puskesmas, ${kabName(S.kab)}` : `Wilayah data, ${kabName(S.kab)}`) : G.label;
+  $("mapSub").innerHTML = `${esc(scopeLbl)} · ${matchedRows.size} dari ${S.rows.length} desa di data tampil di peta`+(miss.length?` · <span style="color:var(--q2)">belum ketemu: ${miss.slice(0,6).map(r=>esc(short(r.nama_desa))).join(", ")}${miss.length>6?", …":""} (cek kode desa)</span>`:"");
+  $("map").innerHTML=`<svg viewBox="0 0 ${W} ${H.toFixed(0)}" role="img" aria-label="Peta kuadran">${g}${labs.length<=45?labs.join(""):""}</svg>`;
 }
 
 function renderTable(A,ix,iy){
@@ -665,7 +713,7 @@ function renderTable(A,ix,iy){
       <td class="num">${fmt(a.y&&a.y.v)}<small>${a.y?`${a.y.n}/${a.y.d}`:""}</small></td>
       <td>${a.flags.map(f=>`<span class="flag">${esc(f)}</span>`).join("")}</td></tr>`;
   }).join("");
-  $("table").innerHTML=`<table><thead><tr><th>#</th><th>Desa</th><th>Kuadran</th><th style="text-align:right" title="${esc(ix.n)}">X · ${esc(ix.n)} (%)</th><th style="text-align:right" title="${esc(iy.n)}">Y · ${esc(iy.n)} (%)</th><th>Catatan</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $("table").innerHTML=`<table><thead><tr><th>#</th><th>${isPkm()?"Puskesmas":"Desa"}</th><th>Kuadran</th><th style="text-align:right" title="${esc(ix.n)}">X · ${esc(ix.n)} (%)</th><th style="text-align:right" title="${esc(iy.n)}">Y · ${esc(iy.n)} (%)</th><th>Catatan</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderDetail(A){
@@ -682,7 +730,7 @@ function renderDetail(A){
     if(c&&c.v!=null&&t!=null){ const ok = i.ax==="x"? c.v<=t : c.v>=t; cls=ok?"ok":"no"; mark=ok?" ✓":" ✗"; }
     html+=`<dt>${esc(i.n)}</dt><dd class="${cls}">${c&&c.v!=null?fmt(c.v)+"%":c&&c.invalid?"tidak valid":"–"}${mark}</dd><dd class="na">${t!=null?"target "+fmt(t):""}</dd>`;
   });
-  box.innerHTML=`<div class="hd"><div><h3>${esc(r.nama_desa)}</h3><p class="sub">${a.q?`Kuadran ${ROMAN[a.q]} · ${Q[a.q].t}`:"Belum masuk kuadran"} · ${r.s_balita??"–"} balita sasaran</p></div><button class="btn" type="button" id="bClose">Tutup</button></div><dl>${html}</dl><p class="note">Garis X dan Y memakai angka yang Anda ketik; indikator lain memakai target referensi.</p>`;
+  box.innerHTML=`<div class="hd"><div><h3>${esc(r.nama_desa)}</h3><p class="sub">${a.q?`Kuadran ${ROMAN[a.q]} · ${Q[a.q].t}`:"Belum masuk kuadran"} · ${r._n?r._n+" desa · ":""}${r.s_balita??"–"} balita sasaran</p></div><button class="btn" type="button" id="bClose">Tutup</button></div><dl>${html}</dl><p class="note">Garis X dan Y memakai angka yang Anda ketik; indikator lain memakai target referensi.</p>`;
 }
 
 function renderAlerts(){
@@ -745,11 +793,11 @@ function renderTrend(){
     return;
   }
   $("trendCard").querySelectorAll("[data-exp]").forEach(b=>b.hidden=false);
-  $("trendSub").textContent=`${P.length} periode · garis tebal = capaian wilayah · warna garis desa = kuadran pada ${periodLabel(curPeriod())}`;
+  $("trendSub").textContent=`${P.length} periode · garis tebal = capaian wilayah · warna garis ${U()} = kuadran pada ${periodLabel(curPeriod())}`;
   // kumpulkan seri
   const curQ={}; analyse().forEach(a=>{ curQ[keyOf(a.r)]=a.q; });
   const names={}, series={};
-  P.forEach((p,pi)=>p.rows.forEach(r=>{ const k=keyOf(r); names[k]=names[k]||r.nama_desa; const c=calc(r,ind); (series[k]=series[k]||[])[pi]= c&&c.v!=null? c.v : null; }));
+  P.forEach((p,pi)=>unitRows(p.rows).forEach(r=>{ const k=keyOf(r); names[k]=names[k]||r.nama_desa; const c=calc(r,ind); (series[k]=series[k]||[])[pi]= c&&c.v!=null? c.v : null; }));
   const wil=P.map(p=>{ const w=wilayah(ind,p.rows); return w? w.v : null; });
   const vals=[...Object.values(series).flat(), ...wil, ind.ax==="x"? S.trendK===S.xk?S.cutX:ind.t : S.trendK===S.yk?S.cutY:ind.t].filter(v=>v!=null&&isFinite(v));
   const target = S.trendK===S.xk? S.cutX : S.trendK===S.yk? S.cutY : ind.t;
@@ -765,12 +813,13 @@ function renderTrend(){
   if(target!=null) g+=`<line class="ttarget" x1="${ml}" x2="${ml+pw}" y1="${sy(target)}" y2="${sy(target)}"/><text class="cutl" x="${ml+pw+6}" y="${sy(target)+4}">target ${fmt(target)}%</text>`;
   const path=arr=>{ let d="",pen=false; arr.forEach((v,i)=>{ if(v==null){pen=false;return;} d+=(pen?"L":"M")+sx(i).toFixed(1)+","+sy(v).toFixed(1); pen=true; }); return d; };
   const keys=Object.keys(series).sort((a,b)=>(S.sel&&a===keyOf({kode_desa:S.sel,nama_desa:""})?1:0)-(S.sel&&b===keyOf({kode_desa:S.sel,nama_desa:""})?1:0));
-  const selKey = S.sel? keyOf(S.rows.find(r=>r.kode_desa===S.sel)||{kode_desa:S.sel,nama_desa:""}) : null;
+  const URows=unitRows(S.rows);
+  const selKey = S.sel? keyOf(URows.find(r=>r.kode_desa===S.sel)||{kode_desa:S.sel,nama_desa:""}) : null;
   keys.sort((a,b)=>(a===selKey)-(b===selKey));
   const ends=[];
   keys.forEach(k=>{
     const arr=series[k]; const q=curQ[k]||0; const col=TCOL[q]; const isSel=k===selKey;
-    const id=(S.rows.find(r=>keyOf(r)===k)||{}).kode_desa||"";
+    const id=(URows.find(r=>keyOf(r)===k)||{}).kode_desa||"";
     g+=`<path class="tline ${isSel?"sel":""}" d="${path(arr)}" style="stroke:${col}" ${id?`data-id="${esc(id)}"`:""}><title>${esc(names[k])}</title></path>`;
     arr.forEach((v,i)=>{ if(v!=null) g+=`<circle class="tdot" cx="${sx(i).toFixed(1)}" cy="${sy(v).toFixed(1)}" r="${isSel?4.5:2.8}" style="fill:${col}" ${id?`data-id="${esc(id)}"`:""}><title>${esc(names[k])} · ${esc(P[i].label)}: ${fmt(v)}%</title></circle>`; });
     const li=arr.length-1; if(arr[li]!=null && (isSel || keys.length<=12)) ends.push({y:sy(arr[li]),t:short(names[k]),sel:isSel});
@@ -801,7 +850,7 @@ function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     try{
-      const payload={v:1, savedAt:new Date().toISOString(), periods:S.periods, settings:{pk:S.pk,xk:S.xk,yk:S.yk,cutX:S.cutX,cutY:S.cutY,kab:S.kab,kec:S.kec,trendK:S.trendK}};
+      const payload={v:1, savedAt:new Date().toISOString(), periods:S.periods, settings:{pk:S.pk,unit:S.unit,xk:S.xk,yk:S.yk,cutX:S.cutX,cutY:S.cutY,kab:S.kab,kec:S.kec,trendK:S.trendK}};
       localStorage.setItem(STORE_KEY, JSON.stringify(payload));
       if($("storeInfo").dataset.blocked) return;
       $("storeInfo").textContent = S.periods.length? `Tersimpan otomatis di browser perangkat ini (${S.periods.length} periode). Data tidak dikirim ke server.` : "";
@@ -822,6 +871,7 @@ function applyBackup(d, replace){
   incoming.forEach(p=>{ const i=S.periods.findIndex(x=>x.key===p.key); if(i>=0) S.periods[i]=p; else S.periods.push(p); });
   sortPeriods();
   const st=d.settings||{};
+  if(st.unit) S.unit=st.unit;
   if(st.xk&&BYK[st.xk]) S.xk=st.xk; if(st.yk&&BYK[st.yk]) S.yk=st.yk;
   if(st.cutX!=null) S.cutX=st.cutX; if(st.cutY!=null) S.cutY=st.cutY;
   if(st.kab!=null&&(st.kab===""||GEO[st.kab])) S.kab=st.kab; if(st.kec) S.kec=st.kec; if(st.trendK&&BYK[st.trendK]) S.trendK=st.trendK;
@@ -929,7 +979,7 @@ function readWorkbook(buf){
   const out=[];
   for(let i=hi+1;i<rows.length;i++){
     const r=rows[i]; if(!r) continue;
-    const o={}; head.forEach((h,j)=>{ if(!h||h==="cek") return; o[h]= (h==="kode_desa"||h==="nama_desa")? (r[j]==null?null:String(r[j]).trim()) : num(r[j]); });
+    const o={}; head.forEach((h,j)=>{ if(!h||h==="cek") return; o[h]= (h==="kode_desa"||h==="nama_desa"||h==="puskesmas")? (r[j]==null?null:String(r[j]).trim()) : num(r[j]); });
     if(!o.nama_desa) continue;
     if(!o.kode_desa) o.kode_desa="R"+i;
     out.push(o);
@@ -959,6 +1009,8 @@ async function onDataFile(e){
   sortPeriods();
   usePeriod(files.length>1? S.periods[S.periods.length-1].key : lastKey);
   S.sel=null; S.hideQ.clear();
+  if(hasPkmRows(S.rows) && !S._unitChosen) S.unit="pkm";
+  if(!hasPkmRows(S.rows)) S.unit=S.unit||"desa";
   try{
     if(!hasData(BYK[S.xk])) S.xk=(IND.find(i=>i.ax==="x"&&hasData(i))||BYK.P1).k;
     if(!hasData(BYK[S.yk])) S.yk=(IND.find(i=>i.ax==="y"&&hasData(i))||BYK.D1).k;
@@ -986,10 +1038,11 @@ $("fGeo").addEventListener("change",async e=>{
 $("selKab").addEventListener("change",e=>{ const v=e.target.value; if(v==="__custom") return; S.geoCustom=null; S.kab=v; S.kec="data"; syncMapControls(); render(); save(); });
 $("selKec").addEventListener("change",e=>{ S.kec=e.target.value; render(); save(); });
 $("selPeriod").addEventListener("change",e=>{ usePeriod(e.target.value); S.sel=null; syncControls(); render(); save(); });
+$("selUnit").addEventListener("change",e=>{ S.unit=e.target.value; S._unitChosen=true; S.sel=null; syncControls(); render(); save(); });
 $("selTrend").addEventListener("change",e=>{ S.trendK=e.target.value; renderTrend(); save(); });
 $("bBackup").addEventListener("click",()=>{
   if(!S.periods.length){ toast("Belum ada data untuk dicadangkan."); return; }
-  const payload={app:"RADAR Gizi", v:1, savedAt:new Date().toISOString(), periods:S.periods, settings:{pk:S.pk,xk:S.xk,yk:S.yk,cutX:S.cutX,cutY:S.cutY,kab:S.kab,kec:S.kec,trendK:S.trendK}};
+  const payload={app:"RADAR Gizi", v:1, savedAt:new Date().toISOString(), periods:S.periods, settings:{pk:S.pk,unit:S.unit,xk:S.xk,yk:S.yk,cutX:S.cutX,cutY:S.cutY,kab:S.kab,kec:S.kec,trendK:S.trendK}};
   try{ downloadBlob(new Blob([JSON.stringify(payload)],{type:"application/json"}), `Cadangan_${fileSlug()}.json`); toast("File cadangan diunduh. Simpan di folder komputer Anda."); }
   catch(_){ toast("Unduhan tidak didukung di sini."); }
 });

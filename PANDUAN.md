@@ -73,7 +73,7 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 
 ## D. Memperbarui aplikasi
 1. Ganti file yang berubah, misalnya `index.html`.
-2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.4.0";`, misalnya menjadi `v1.4.1`.
+2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.5.0";`, misalnya menjadi `v1.5.1`.
 3. Unggah ulang kedua file tersebut. Pengguna mendapat versi baru saat membuka aplikasi berikutnya, kadang setelah dibuka dua kali.
 
 ---
@@ -90,7 +90,14 @@ Grafik kuadran, peta, dan grafik tren masing-masing punya tombol **Unduh JPG** d
 
 ---
 
-## G. Sumber data dan catatan
+## G. Data per puskesmas dan rekap kabupaten
+- **Satu puskesmas:** isi template dengan desa wilayah kerja puskesmas saja; kolom `puskesmas` boleh kosong. Peta otomatis memperbesar ke desa-desa tersebut, termasuk bila wilayah puskesmas hanya sebagian kecamatan atau mencakup beberapa kecamatan. Desa di sekitarnya yang tidak ada di data tampil abu-abu samar sebagai konteks.
+- **Rekap kabupaten (Dinas Kesehatan):** satu file berisi semua desa, dan kolom `puskesmas` **wajib diisi**. Aplikasi otomatis memakai **Unit analisis: Per puskesmas**: angka desa dijumlahkan per puskesmas, kuadran dihitung per puskesmas, dan di peta setiap desa diwarnai sesuai kuadran puskesmasnya. Unit bisa diganti ke **Per desa** di panel kiri.
+- **Kode desa** tetap kunci utama pencocokan peta. Nama desa sering berbeda ejaan (misalnya *Pannanrang* vs *Pananrang*), sehingga desa tanpa kode bisa tidak tampil di peta. Analisis kuadrannya tetap berjalan.
+
+---
+
+## H. Sumber data dan catatan
 - **Batas desa:** Batas Desa Maret 2020 (BIG/Kemendagri), Sulawesi Selatan, 3.044 desa/kelurahan. Bentuk poligon disederhanakan untuk tampilan. Wilayah yang diklaim lebih dari satu desa digabungkan ke desa yang tercatat pertama, semata-mata untuk keperluan tampilan peta.
 - **Target referensi:** RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah di aplikasi.
 - **Kerahasiaan:** template hanya berisi data agregat per desa, tanpa nama, NIK, atau alamat individu.
