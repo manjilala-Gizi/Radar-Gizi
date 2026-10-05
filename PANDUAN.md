@@ -73,7 +73,7 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 
 ## D. Memperbarui aplikasi
 1. Ganti file yang berubah, misalnya `index.html`.
-2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.5.0";`, misalnya menjadi `v1.5.1`.
+2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.6.1";`, misalnya menjadi `v1.6.2`.
 3. Unggah ulang kedua file tersebut. Pengguna mendapat versi baru saat membuka aplikasi berikutnya, kadang setelah dibuka dua kali.
 
 ---
@@ -90,10 +90,13 @@ Grafik kuadran, peta, dan grafik tren masing-masing punya tombol **Unduh JPG** d
 
 ---
 
-## G. Data per puskesmas dan rekap kabupaten
-- **Satu puskesmas:** isi template dengan desa wilayah kerja puskesmas saja; kolom `puskesmas` boleh kosong. Peta otomatis memperbesar ke desa-desa tersebut, termasuk bila wilayah puskesmas hanya sebagian kecamatan atau mencakup beberapa kecamatan. Desa di sekitarnya yang tidak ada di data tampil abu-abu samar sebagai konteks.
-- **Rekap kabupaten (Dinas Kesehatan):** satu file berisi semua desa, dan kolom `puskesmas` **wajib diisi**. Aplikasi otomatis memakai **Unit analisis: Per puskesmas**: angka desa dijumlahkan per puskesmas, kuadran dihitung per puskesmas, dan di peta setiap desa diwarnai sesuai kuadran puskesmasnya. Unit bisa diganti ke **Per desa** di panel kiri.
-- **Kode desa** tetap kunci utama pencocokan peta. Nama desa sering berbeda ejaan (misalnya *Pannanrang* vs *Pananrang*), sehingga desa tanpa kode bisa tidak tampil di peta. Analisis kuadrannya tetap berjalan.
+## G. Data per puskesmas, kecamatan, kabupaten/kota, dan provinsi
+- **Satu puskesmas:** isi template dengan desa wilayah kerja puskesmas. Kolom `puskesmas` boleh kosong karena otomatis diambil dari sheet Identitas. Peta otomatis fokus ke desa-desa tersebut.
+- **Dinas Kesehatan kabupaten/kota:** unggah semua file puskesmas untuk bulan yang sama sekaligus. File dengan bulan dan tahun yang sama otomatis **digabung**. Pilih **Unit analisis: Per puskesmas / Per kecamatan / Per desa**.
+- **Dinas Kesehatan provinsi:** unggah rekap per desa dari kabupaten/kota, lalu pilih **Per kabupaten/kota** (peta 24 kabupaten/kota) atau **Per kecamatan**.
+- Angka absolut dijumlahkan per unit, lalu persentase dan kuadran dihitung dari angka gabungan tersebut.
+- **Data hanya per kecamatan/kabupaten:** isi `kode_wilayah` dengan kode 6 digit (kecamatan, misalnya 73.06.02) atau 4 digit (kabupaten/kota, misalnya 73.06), lihat sheet *Kode_Kec_Kab_Sulsel*. Aplikasi mengenali tingkat data dari panjang kode.
+- **Kode desa** tetap kunci utama. Desa tanpa kode lengkap tidak ikut dihitung per kecamatan/kabupaten, dan aplikasi menampilkan peringatan.
 
 ---
 
