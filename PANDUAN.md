@@ -1,7 +1,8 @@
 # RADAR Gizi: Panduan Pemasangan
 
 *Rekap Analisis Determinan dan Area Rawan Gizi*  
-Dikembangkan oleh **Manjilala, Poltekkes Kemenkes Makassar**
+Aplikasi dikembangkan oleh: **Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah** | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar.  
+Dibimbing oleh **Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes**
 
 Aplikasi pendamping e-PPGBM untuk analisis kuadran determinan masalah gizi dan penentuan desa prioritas intervensi.
 Semua data diproses di perangkat pengguna dan tidak dikirim ke server mana pun.
@@ -73,7 +74,7 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 
 ## D. Memperbarui aplikasi
 1. Ganti file yang berubah, misalnya `index.html`.
-2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.6.1";`, misalnya menjadi `v1.6.2`.
+2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.6.2";`, misalnya menjadi `v1.6.3`.
 3. Unggah ulang kedua file tersebut. Pengguna mendapat versi baru saat membuka aplikasi berikutnya, kadang setelah dibuka dua kali.
 
 ---

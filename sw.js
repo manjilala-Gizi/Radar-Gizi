@@ -1,6 +1,6 @@
-// RADAR Gizi - service worker v1.6.1
+// RADAR Gizi - service worker v1.6.2
 // Ganti angka versi setiap kali file aplikasi diperbarui agar pengguna mendapat versi terbaru.
-const CACHE = "radar-gizi-v1.6.1";
+const CACHE = "radar-gizi-v1.6.2";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./lib/xlsx.full.min.js",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png", "./icons/apple-touch-icon.png",
