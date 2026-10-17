@@ -74,7 +74,7 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 
 ## D. Memperbarui aplikasi
 1. Ganti file yang berubah, misalnya `index.html`.
-2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.6.2";`, misalnya menjadi `v1.6.3`.
+2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.6.4";`, misalnya menjadi `v1.6.5`.
 3. Unggah ulang kedua file tersebut. Pengguna mendapat versi baru saat membuka aplikasi berikutnya, kadang setelah dibuka dua kali.
 
 ---
@@ -84,6 +84,9 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 - Beberapa file bisa dipilih sekaligus. Mulai dua periode, grafik **tren** dan daftar **perpindahan kuadran** muncul otomatis.
 - Data **tersimpan otomatis di browser perangkat tersebut**. Saat aplikasi dibuka lagi di perangkat dan browser yang sama, data langsung muncul. Data tidak dikirim ke server mana pun.
 - Data tersimpan bisa hilang jika riwayat atau data situs browser dihapus, atau jika aplikasi dibuka dalam mode penyamaran. Karena itu, biasakan menekan **Simpan cadangan** untuk mengunduh file `.json` ke komputer. File ini juga dipakai untuk memindahkan data ke laptop lain lewat tombol **Buka cadangan**.
+- Di panel Data tertulis **Terakhir disimpan** (tanggal dan jam) serta **alamat aplikasi** tempat data itu tersimpan. Data hanya muncul lagi bila aplikasi dibuka dari alamat dan browser yang sama.
+- Setiap selesai mengunggah file, aplikasi menawarkan **Simpan cadangan sekarang**. Satu klik langsung mengunduh file cadangan.
+- Aplikasi menyimpan **salinan kedua** di browser (IndexedDB). Bila penyimpanan utama terhapus oleh bersih-bersih ringan, data dipulihkan otomatis dari salinan ini. Salinan ini tetap ikut hilang bila seluruh data situs dihapus, jadi file cadangan tetap pegangan utama.
 - Pada komputer yang dipakai bersama, gunakan **Hapus semua data di perangkat ini** setelah selesai.
 
 ## F. Gambar untuk Word dan PowerPoint
@@ -102,6 +105,6 @@ Grafik kuadran, peta, dan grafik tren masing-masing punya tombol **Unduh JPG** d
 ---
 
 ## H. Sumber data dan catatan
-- **Batas desa:** Batas Desa Maret 2020 (BIG/Kemendagri), Sulawesi Selatan, 3.044 desa/kelurahan. Bentuk poligon disederhanakan untuk tampilan. Wilayah yang diklaim lebih dari satu desa digabungkan ke desa yang tercatat pertama, semata-mata untuk keperluan tampilan peta.
+- **Batas desa:** Batas Desa Maret 2020 (BIG/Kemendagri), Sulawesi Selatan, 3.044 desa/kelurahan. Bentuk poligon disederhanakan untuk tampilan. Danau Towuti, Matano, dan Tempe digambar biru muda. Wilayah yang diklaim lebih dari satu desa digabungkan ke desa yang tercatat pertama, semata-mata untuk keperluan tampilan peta.
 - **Target referensi:** RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah di aplikasi.
 - **Kerahasiaan:** template hanya berisi data agregat per desa, tanpa nama, NIK, atau alamat individu.
