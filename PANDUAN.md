@@ -16,7 +16,7 @@ Semua data diproses di perangkat pengguna dan tidak dikirim ke server mana pun.
 | `sw.js` | Service worker: menyimpan aplikasi agar tetap jalan tanpa internet |
 | `lib/xlsx.full.min.js` | Pembaca file Excel (SheetJS 0.18.5, lisensi Apache-2.0) |
 | `icons/` | Ikon aplikasi |
-| `Template_RADAR_Gizi.xlsx` | Template kosong untuk petugas; bisa diunduh lewat tombol di aplikasi |
+| `Template_RADAR_Gizi.xlsx` | Template kosong untuk petugas. Di aplikasi, tombol **Unduh template** juga bisa membuat template yang sudah berisi kode dan nama wilayah |
 
 PWA wajib disajikan lewat **HTTPS**. Jika `index.html` dibuka langsung dari folder di komputer, aplikasi tetap berjalan, tetapi tidak bisa dipasang dan tidak bekerja offline.
 
@@ -74,7 +74,7 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 
 ## D. Memperbarui aplikasi
 1. Ganti file yang berubah, misalnya `index.html`.
-2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.6.4";`, misalnya menjadi `v1.6.5`.
+2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.8.0";`, misalnya menjadi `v1.8.1`.
 3. Unggah ulang kedua file tersebut. Pengguna mendapat versi baru saat membuka aplikasi berikutnya, kadang setelah dibuka dua kali.
 
 ---
@@ -89,12 +89,23 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 - Aplikasi menyimpan **salinan kedua** di browser (IndexedDB). Bila penyimpanan utama terhapus oleh bersih-bersih ringan, data dipulihkan otomatis dari salinan ini. Salinan ini tetap ikut hilang bila seluruh data situs dihapus, jadi file cadangan tetap pegangan utama.
 - Pada komputer yang dipakai bersama, gunakan **Hapus semua data di perangkat ini** setelah selesai.
 
-## F. Gambar untuk Word dan PowerPoint
+## F. Gambar dan laporan PDF
 Grafik kuadran, peta, dan grafik tren masing-masing punya tombol **Unduh JPG** dan **Salin gambar**. Gambar dibuat berlatar putih, lengkap dengan judul, legenda, dan sumber. *Salin gambar* langsung bisa ditempel (Ctrl+V) di Word atau PowerPoint. Jika tombol ini tidak berfungsi, misalnya di dalam Google Sites, gunakan *Unduh JPG* atau buka aplikasi di tab penuh.
+
+Tombol **Buat laporan PDF** di atas hasil analisis menyusun laporan A4: ringkasan kuadran, grafik, peta, tabel prioritas, capaian seluruh indikator, tren, kasus belum tertangani, arah tindak lanjut, catatan (opsional), dan kolom tanda tangan (Petugas Gizi dan Kepala Puskesmas; untuk Dinkes otomatis Pengelola Program Gizi dan Kepala Bidang Kesmas). Klik **Cetak / Simpan PDF**, lalu pilih **Simpan sebagai PDF** di jendela cetak. Laporan sebaiknya dibuat dari tab penuh atau aplikasi terpasang, bukan dari dalam Google Sites.
 
 ---
 
-## G. Data per puskesmas, kecamatan, kabupaten/kota, dan provinsi
+## G. Template per wilayah dan indikator
+- Tombol **Unduh template (.xlsx)** membuka pilihan wilayah: puskesmas/kecamatan (centang desa wilayah kerja), kabupaten/kota (baris per desa atau per kecamatan), provinsi (24 kabupaten/kota), atau template kosong. Kode dan nama wilayah, kabupaten, kecamatan, bulan, dan tahun langsung terisi. Template dibuat di perangkat, jadi tetap bisa diunduh tanpa internet.
+- Aplikasi menghitung 47 indikator dari dua sumber, masing-masing diberi label: **Gizi (Dinkes)** dan **Konvergensi Stunting** (31 indikator layanan intervensi stunting). Indikator yang ada di kedua sumber diberi kedua label.
+- Kolom indikator Konvergensi Stunting di template bersifat opsional. Bila dikosongkan, indikatornya tidak muncul di aplikasi.
+- Indikator balita 24-59 bulan dihitung otomatis dari kolom balita 0-59 bulan dikurangi kolom baduta 0-23 bulan. Makanan bergizi seimbang pada ibu hamil diukur dengan MDD-W (minimal 5 dari 10 kelompok pangan). Kolom pekarangan diisi Ada/Tidak.
+- File template versi lama tetap bisa diunggah; indikator Konvergensi Stunting saja yang tidak muncul.
+
+---
+
+## H. Data per puskesmas, kecamatan, kabupaten/kota, dan provinsi
 - **Satu puskesmas:** isi template dengan desa wilayah kerja puskesmas. Kolom `puskesmas` boleh kosong karena otomatis diambil dari sheet Identitas. Peta otomatis fokus ke desa-desa tersebut.
 - **Dinas Kesehatan kabupaten/kota:** unggah semua file puskesmas untuk bulan yang sama sekaligus. File dengan bulan dan tahun yang sama otomatis **digabung**. Pilih **Unit analisis: Per puskesmas / Per kecamatan / Per desa**.
 - **Dinas Kesehatan provinsi:** unggah rekap per desa dari kabupaten/kota, lalu pilih **Per kabupaten/kota** (peta 24 kabupaten/kota) atau **Per kecamatan**.
@@ -104,7 +115,7 @@ Grafik kuadran, peta, dan grafik tren masing-masing punya tombol **Unduh JPG** d
 
 ---
 
-## H. Sumber data dan catatan
+## I. Sumber data dan catatan
 - **Batas desa:** Batas Desa Maret 2020 (BIG/Kemendagri), Sulawesi Selatan, 3.044 desa/kelurahan. Bentuk poligon disederhanakan untuk tampilan. Danau Towuti, Matano, dan Tempe digambar biru muda. Wilayah yang diklaim lebih dari satu desa digabungkan ke desa yang tercatat pertama, semata-mata untuk keperluan tampilan peta.
-- **Target referensi:** RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah di aplikasi.
+- **Indikator dan target referensi:** RPJMN 2026, Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025, dan 31 indikator layanan intervensi stunting dalam aksi konvergensi daerah. Semua target bisa diubah di aplikasi.
 - **Kerahasiaan:** template hanya berisi data agregat per desa, tanpa nama, NIK, atau alamat individu.
