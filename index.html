@@ -177,6 +177,7 @@ svg{display:block;width:100%;height:auto}
 .poly.ctx:hover{fill-opacity:.9}
 .mlab.pkm{font-size:12px;font-weight:800}
 .poly.sel{stroke:var(--ink);stroke-width:3}
+.poly.dot{stroke-width:1!important}
 .lake{fill:var(--lake);stroke:var(--lakeln);stroke-width:.6}
 .lakelab{fill:var(--lakeln);font:italic 600 9px var(--f-body);text-anchor:middle;pointer-events:none}
 .mlab{fill:var(--ink);font:600 10.5px var(--f-body);pointer-events:none;text-anchor:middle;paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
@@ -494,7 +495,7 @@ footer{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padd
       </div>
     </main>
   </div>
-  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah (Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar), dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes · versi 1.8.1 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
+  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah (Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar), dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes · versi 1.8.2 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
 </div>
 
 <script>
@@ -806,6 +807,8 @@ function declutter(labs,W){
   }
   return out.join("");
 }
+/* pulau/desa yang terlalu kecil di layar diberi titik penanda agar tetap terlihat */
+function dotMarks(dots,cls,attrs){ return dots.map(([x,y])=>`<circle class="${cls} dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" ${attrs||""}/>`).join(""); }
 function geoRings(geom){
   if(!geom) return [];
   if(geom.type==="Polygon") return [geom.coordinates];
@@ -880,14 +883,18 @@ function renderAreaMap(A,u){
   let g="", labs=[];
   items.forEach(({f,o})=>{
     let d="", lx=0, ly=0, ln=0, best=0;
+    const dots=[];
     geoRings(f.geometry).forEach(poly=>{
-      poly.forEach(ring=>{ d+="M"+ring.map(([x,y])=>px(x).toFixed(1)+","+py(y).toFixed(1)).join("L")+"Z"; });
+      const bb=[1e9,1e9,-1e9,-1e9];
+      poly.forEach(ring=>{ d+="M"+ring.map(([x,y])=>{ const X=px(x),Y=py(y); if(X<bb[0])bb[0]=X; if(Y<bb[1])bb[1]=Y; if(X>bb[2])bb[2]=X; if(Y>bb[3])bb[3]=Y; return X.toFixed(1)+","+Y.toFixed(1); }).join("L")+"Z"; });
+      if(bb[2]-bb[0]<4.5 && bb[3]-bb[1]<4.5) dots.push([(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]);
       const outer=poly[0]||[]; if(outer.length>best){ best=outer.length; lx=0;ly=0;ln=0; outer.slice(0,-1).forEach(([x,y])=>{lx+=px(x);ly+=py(y);ln++;}); }
     });
     const nm=f.properties.nama;
     if(!o){ g+=`<path class="poly ctx" d="${d}" fill-rule="evenodd"><title>${esc(nm)} · di luar data</title></path>`; return; }
     const q=o.q&&!S.hideQ.has(o.q)? o.q : 0;
     g+=`<path class="poly f${q} ${S.sel===o.r.kode_desa?"sel":""}" d="${d}" fill-rule="evenodd" data-id="${esc(o.r.kode_desa)}" tabindex="0"><title>${esc(nm)}${o.q?" · Kuadran "+ROMAN[o.q]:" · data belum lengkap"}</title></path>`;
+    g+=dotMarks(dots,`poly f${q}`,`data-id="${esc(o.r.kode_desa)}"`);
     if(ln) labs.push(`<text class="mlab pkm" x="${(lx/ln).toFixed(1)}" y="${(ly/ln+4).toFixed(1)}">${esc(short(nm))}</text>`);
   });
   const LK=lakeLayer(px,py,W,H); g+=LK.svg; if(LK.vis) $("legend").innerHTML+=LAKE_LEG;
@@ -941,8 +948,11 @@ function renderMap(A){
   items.forEach(it=>{
     const {f,p,sk,row,o}=it;
     let d="", lx=0, ly=0, ln=0, best=0;
+    const dots=[];
     geoRings(f.geometry).forEach(poly=>{
-      poly.forEach(ring=>{ d+="M"+ring.map(([x,y])=>px(x).toFixed(1)+","+py(y).toFixed(1)).join("L")+"Z"; });
+      const bb=[1e9,1e9,-1e9,-1e9];
+      poly.forEach(ring=>{ d+="M"+ring.map(([x,y])=>{ const X=px(x),Y=py(y); if(X<bb[0])bb[0]=X; if(Y<bb[1])bb[1]=Y; if(X>bb[2])bb[2]=X; if(Y>bb[3])bb[3]=Y; return X.toFixed(1)+","+Y.toFixed(1); }).join("L")+"Z"; });
+      if(bb[2]-bb[0]<4.5 && bb[3]-bb[1]<4.5) dots.push([(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]);
       const outer=poly[0]||[]; if(outer.length>best){ best=outer.length; lx=0;ly=0;ln=0; outer.slice(0,-1).forEach(([x,y])=>{lx+=px(x);ly+=py(y);ln++;}); }
     });
     const nmDesa = row? row.nama_desa : (p.nama||p.nama_desa||p.NAMOBJ||p.name||p.desa||"");
@@ -951,6 +961,7 @@ function renderMap(A){
     const id=o? esc(o.r.kode_desa) : "";
     const tip = pkm? `${esc(nmDesa)} · Puskesmas ${esc(o?o.r.nama_desa:"-")}${o&&o.q?" · Kuadran "+ROMAN[o.q]:""}` : `${esc(nmDesa)}${o&&o.q?" · Kuadran "+ROMAN[o.q]:" · data belum lengkap"}`;
     g+=`<path class="poly f${q} ${o&&S.sel===o.r.kode_desa?"sel":""}" d="${d}" fill-rule="evenodd" ${id?`data-id="${id}" tabindex="0"`:""} ${SW?`style="stroke-width:${SW}"`:""}><title>${tip}</title></path>`;
+    g+=dotMarks(dots,`poly f${q}`,id?`data-id="${id}"`:"");
     if(ln){
       if(pkm&&o){ const P=pk[o.r.kode_desa]=pk[o.r.kode_desa]||{x:0,y:0,n:0,t:o.r.nama_desa}; P.x+=lx/ln; P.y+=ly/ln; P.n++; }
       else labs.push(`<text class="mlab" x="${(lx/ln).toFixed(1)}" y="${(ly/ln+4).toFixed(1)}">${esc(short(nmDesa))}</text>`);
@@ -1606,7 +1617,7 @@ function buildReport(){
   if(note){ H.push(sh("Catatan dan Rekomendasi")); H.push(`<p>${esc(note).replace(/\n/g,"<br>")}</p>`); }
   const sig=(j,n,nip,top)=>`<div>${top||"&nbsp;"}<br>${esc(j)}<div class="sp"></div><span class="nm">${esc(n)||"&nbsp;".repeat(40)}</span><br>NIP. ${esc(nip)||"…………………………"}</div>`;
   H.push(`<div class="sign">${sig($("rJab1").value,$("rNama1").value,$("rNip1").value,"&nbsp;<br>&nbsp;")}${sig($("rJab2").value,$("rNama2").value,$("rNip2").value,esc([$("rTempat").value,$("rTgl").value].filter(Boolean).join(", "))+"<br>Mengetahui,")}</div>`);
-  H.push(`<div class="foot">Dibuat dengan RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) versi 1.8.1 pada ${tglIndo()}. Aplikasi dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar. Dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes.</div>`);
+  H.push(`<div class="foot">Dibuat dengan RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) versi 1.8.2 pada ${tglIndo()}. Aplikasi dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar. Dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes.</div>`);
   return H.join("");
 }
 function doReport(){
