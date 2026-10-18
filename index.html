@@ -60,8 +60,10 @@ header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justif
 .banner.warn{border-color:var(--q2);border-style:solid}
 .layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
-aside.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:18px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+aside.panel{min-width:0;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:18px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
 @media (max-width:900px){aside.panel{position:static}}
+aside.panel>*{min-width:0}
+aside.panel select{max-width:100%;min-width:0;text-overflow:ellipsis}
 .step{display:grid;gap:8px}
 .step h2{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0;font-weight:700;display:flex;gap:8px;align-items:center}
 .step h2 i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--ink);color:var(--surface);font-size:10px}
@@ -495,7 +497,7 @@ footer{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padd
       </div>
     </main>
   </div>
-  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah (Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar), dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes · versi 1.8.2 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
+  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah (Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar), dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes · versi 1.8.3 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
 </div>
 
 <script>
@@ -661,7 +663,9 @@ function render(){
     .filter(x=>x[1]).map(([l,v])=>`<div><span>${l}</span><b>${esc(v)}</b></div>`).join("");
   const has=S.rows.length>0;
   $("welcome").hidden=has; $("results").hidden=!has;
-  $("dataInfo").textContent = has? `${S.rows.length} desa · ${periodLabel(curPeriod())}${S.fileName?" · "+S.fileName:""}` : "Belum ada data. Unduh template, isi, lalu unggah.";
+  const fnShort = f => !f? "" : f.length>30? f.slice(0,20)+"…"+f.slice(-9) : f;
+  $("dataInfo").textContent = has? `${S.rows.length} desa · ${periodLabel(curPeriod())}${S.fileName?" · "+fnShort(S.fileName):""}` : "Belum ada data. Unduh template, isi, lalu unggah.";
+  $("dataInfo").title = has&&S.fileName? S.fileName : "";
   renderPeriodBox();
   const AV=has? availableUnits(S.rows) : ["desa"], EU=effUnit();
   $("unitBox").hidden=!(has&&AV.length>1);
@@ -1617,7 +1621,7 @@ function buildReport(){
   if(note){ H.push(sh("Catatan dan Rekomendasi")); H.push(`<p>${esc(note).replace(/\n/g,"<br>")}</p>`); }
   const sig=(j,n,nip,top)=>`<div>${top||"&nbsp;"}<br>${esc(j)}<div class="sp"></div><span class="nm">${esc(n)||"&nbsp;".repeat(40)}</span><br>NIP. ${esc(nip)||"…………………………"}</div>`;
   H.push(`<div class="sign">${sig($("rJab1").value,$("rNama1").value,$("rNip1").value,"&nbsp;<br>&nbsp;")}${sig($("rJab2").value,$("rNama2").value,$("rNip2").value,esc([$("rTempat").value,$("rTgl").value].filter(Boolean).join(", "))+"<br>Mengetahui,")}</div>`);
-  H.push(`<div class="foot">Dibuat dengan RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) versi 1.8.2 pada ${tglIndo()}. Aplikasi dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar. Dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes.</div>`);
+  H.push(`<div class="foot">Dibuat dengan RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) versi 1.8.3 pada ${tglIndo()}. Aplikasi dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar. Dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes.</div>`);
   return H.join("");
 }
 function doReport(){

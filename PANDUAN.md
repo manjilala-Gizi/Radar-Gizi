@@ -74,7 +74,7 @@ Setelah dibuka sekali saat online, aplikasi tetap bisa dipakai tanpa internet.
 
 ## D. Memperbarui aplikasi
 1. Ganti file yang berubah, misalnya `index.html`.
-2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.8.2";`, misalnya menjadi `v1.8.3`.
+2. Buka `sw.js` dan naikkan angka versi pada baris `const CACHE = "radar-gizi-v1.8.3";`, misalnya menjadi `v1.8.4`.
 3. Unggah ulang kedua file tersebut. Pengguna mendapat versi baru saat membuka aplikasi berikutnya, kadang setelah dibuka dua kali.
 
 ---
