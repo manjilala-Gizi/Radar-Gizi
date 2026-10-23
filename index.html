@@ -497,7 +497,7 @@ footer{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padd
       </div>
     </main>
   </div>
-  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah (Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar), dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes · versi 1.8.3 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
+  <footer>RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) · dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah (Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar), dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes · versi 1.8.4 · prototipe lomba PHIS-CO 2026 · Target referensi: RPJMN 2026 dan Laporan Tahunan Surveilans Gizi Dinkes Sulsel 2025. Semua target bisa diubah.</footer>
 </div>
 
 <script>
@@ -1017,18 +1017,22 @@ function renderDetail(A){
 }
 
 function renderAlerts(){
-  const items=[];
+  const items=[]; let miss=0, ok=0;
   S.rows.forEach(r=>{
     const nm=short(r.nama_desa);
-    const gap=(a,b)=> (r[a]!=null&&r[b]!=null)? r[a]-r[b] : 0;
+    // kosong = data tidak tersedia: jangan dianggap sudah ditangani
+    const gap=(a,b)=>{ if(r[a]==null||r[a]<=0) return 0; if(r[b]==null){ miss++; return 0; } ok++; return r[a]-r[b]; };
     const g1=gap("gizi_buruk","gb_rawat"); if(g1>0) items.push([g1,`balita gizi buruk di <b style="color:var(--ink);font-family:var(--f-body);font-size:13px">${esc(nm)}</b> belum dirawat`,3]);
     const g2=gap("gizi_kurang","gk_pmt"); if(g2>0) items.push([g2,`balita gizi kurang di <b style="color:var(--ink);font-family:var(--f-body);font-size:13px">${esc(nm)}</b> belum dapat PMT`,2]);
     const g3=gap("bumil_kek","kek_pmt"); if(g3>0) items.push([g3,`ibu hamil KEK di <b style="color:var(--ink);font-family:var(--f-body);font-size:13px">${esc(nm)}</b> belum dapat PMT`,1]);
   });
   items.sort((a,b)=>b[2]-a[2]||b[0]-a[0]);
-  S._alerts=items;
+  S._alerts=items; S._alertMiss=miss; S._alertOk=ok;
+  const missLi = miss? `<li style="border-color:var(--q2)"><span>${miss} catatan kasus belum disertai data penanganan (kolom tatalaksana/PMT kosong), sehingga status penanganannya belum dapat dinilai.</span></li>` : "";
   $("alerts").innerHTML = items.length? items.slice(0,12).map(([n,t])=>`<li><b>${n}</b><span>${t}</span></li>`).join("") + (items.length>12?`<li style="border-color:var(--line)"><span>dan ${items.length-12} catatan lain.</span></li>`:"")
-    : `<li style="border-color:var(--q4)"><span>Semua kasus gizi buruk, gizi kurang, dan bumil KEK tercatat sudah ditangani.</span></li>`;
+    : (ok? `<li style="border-color:var(--q4)"><span>Semua kasus gizi buruk, gizi kurang, dan bumil KEK yang data penanganannya terisi tercatat sudah ditangani.</span></li>`
+         : miss? "" : `<li style="border-color:var(--line)"><span>Tidak ada kasus gizi buruk, gizi kurang, atau bumil KEK yang tercatat pada data ini.</span></li>`);
+  if(missLi) $("alerts").innerHTML += missLi;
 }
 
 
@@ -1612,7 +1616,7 @@ function buildReport(){
   if(sec.has("kasus")){ H.push(sh("Kasus yang Belum Tertangani")); const it=S._alerts||[];
     const tot={3:0,2:0,1:0}; it.forEach(([n,,k])=>tot[k]+=n);
     const MAXA=30;
-    H.push(it.length? `<p>Total kasus yang tercatat belum ditangani: <b>${tot[3]}</b> balita gizi buruk belum mendapat tatalaksana, <b>${tot[2]}</b> balita gizi kurang belum mendapat PMT, dan <b>${tot[1]}</b> ibu hamil KEK belum mendapat PMT.</p><ul>${it.slice(0,MAXA).map(([n,t])=>`<li><b>${n}</b> ${t.replace(/ style="[^"]*"/g,"")}</li>`).join("")}</ul>${it.length>MAXA?`<p class="note2">Ditampilkan ${MAXA} catatan teratas dari ${it.length} catatan. Daftar lengkap dapat dilihat di aplikasi.</p>`:""}` : `<p>Semua kasus gizi buruk, gizi kurang, dan ibu hamil KEK tercatat sudah ditangani.</p>`); }
+    H.push(it.length? `<p>Total kasus yang tercatat belum ditangani: <b>${tot[3]}</b> balita gizi buruk belum mendapat tatalaksana, <b>${tot[2]}</b> balita gizi kurang belum mendapat PMT, dan <b>${tot[1]}</b> ibu hamil KEK belum mendapat PMT.</p><ul>${it.slice(0,MAXA).map(([n,t])=>`<li><b>${n}</b> ${t.replace(/ style="[^"]*"/g,"")}</li>`).join("")}</ul>${it.length>MAXA?`<p class="note2">Ditampilkan ${MAXA} catatan teratas dari ${it.length} catatan. Daftar lengkap dapat dilihat di aplikasi.</p>`:""}` : (S._alertOk? `<p>Semua kasus gizi buruk, gizi kurang, dan ibu hamil KEK yang data penanganannya terisi tercatat sudah ditangani.</p>` : S._alertMiss? "" : `<p>Tidak ada kasus gizi buruk, gizi kurang, atau ibu hamil KEK yang tercatat pada data ini.</p>`)); if(S._alertMiss) H.push(`<p class="note2">${S._alertMiss} catatan kasus belum disertai data penanganan, sehingga status penanganannya belum dapat dinilai.</p>`); }
   if(sec.has("tl")){
     H.push(sh("Arah Tindak Lanjut"));
     H.push(`<div class="tl">`+[1,2,3,4].filter(q=>cnt[q]).map(q=>`<p><b>Kuadran ${ROMAN[q]} · ${Q[q].t} (${cnt[q]} ${esc(u)}):</b> ${list(byQ(q))}.<br>${esc((t=>t[0].toUpperCase()+t.slice(1))(TL_TEXT[q](ix.n,iy.n)))}</p>`).join("")+`</div>`);
@@ -1621,7 +1625,7 @@ function buildReport(){
   if(note){ H.push(sh("Catatan dan Rekomendasi")); H.push(`<p>${esc(note).replace(/\n/g,"<br>")}</p>`); }
   const sig=(j,n,nip,top)=>`<div>${top||"&nbsp;"}<br>${esc(j)}<div class="sp"></div><span class="nm">${esc(n)||"&nbsp;".repeat(40)}</span><br>NIP. ${esc(nip)||"…………………………"}</div>`;
   H.push(`<div class="sign">${sig($("rJab1").value,$("rNama1").value,$("rNip1").value,"&nbsp;<br>&nbsp;")}${sig($("rJab2").value,$("rNama2").value,$("rNip2").value,esc([$("rTempat").value,$("rTgl").value].filter(Boolean).join(", "))+"<br>Mengetahui,")}</div>`);
-  H.push(`<div class="foot">Dibuat dengan RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) versi 1.8.3 pada ${tglIndo()}. Aplikasi dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar. Dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes.</div>`);
+  H.push(`<div class="foot">Dibuat dengan RADAR Gizi (Rekap Analisis Determinan dan Area Rawan Gizi) versi 1.8.4 pada ${tglIndo()}. Aplikasi dikembangkan oleh Ainun Thahirah H., Aminah Razaq dan Andi Marhamatul Ginayah | Mahasiswa Prodi Gizi dan Dietetika Poltekkes Kemenkes Makassar. Dibimbing oleh Manjilala, S.Gz, M.Gizi dan Dr. Nadimin, SKM, M.Kes.</div>`);
   return H.join("");
 }
 function doReport(){
